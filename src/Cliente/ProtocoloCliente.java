@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -51,9 +52,50 @@ public class ProtocoloCliente {
             String GXstring = pIn.readLine(); 
             byte[] GXbytes = Base64.getDecoder().decode(GXstring);
             BigInteger GX = new BigInteger(GXbytes);
-            System.out.println("Respuesta del Servidor: " + P);
-            System.out.println("Respuesta del Servidor: " + G);
-            System.out.println("Respuesta del Servidor: " + GX);
+            String firmaString = pIn.readLine(); 
+            byte[] firmaBytes = Base64.getDecoder().decode(firmaString);
+            BigInteger firma = new BigInteger(firmaBytes);
+            System.out.println("Respuesta del Servidor: Valor de P: " + P);
+            System.out.println("Respuesta del Servidor: Valor de G: " + G);
+            System.out.println("Respuesta del Servidor: Valor de G^x: " + GX);
+            System.out.println("Respuesta del Servidor: Firma obtenida: " + firma);
+            try {
+                // Convertir los valores de G, P, y Gx a bytes y concatenarlos
+                byte[] gBytes = G.toByteArray();
+                byte[] pBytes = P.toByteArray();
+                byte[] gxBytes = GX.toByteArray();
+    
+                // Concatenar todos los bytes en un solo arreglo
+                byte[] dataToVerify = new byte[gBytes.length + pBytes.length + gxBytes.length];
+                System.arraycopy(gBytes, 0, dataToVerify, 0, gBytes.length);
+                System.arraycopy(pBytes, 0, dataToVerify, gBytes.length, pBytes.length);
+                System.arraycopy(gxBytes, 0, dataToVerify, gBytes.length + pBytes.length, gxBytes.length);
+    
+                // Configurar el objeto Signature con SHA1withRSA y la llave pública
+                Signature signature = Signature.getInstance("SHA1withRSA");
+                signature.initVerify(publicKey);
+    
+                // Actualizar el objeto Signature con los datos originales
+                signature.update(dataToVerify);
+                // Verificar la firma
+                boolean verificacionFirma = signature.verify(firma.toByteArray());
+                System.out.println(verificacionFirma);
+                if (!verificacionFirma)
+                {
+                    fromUser = "ERROR";
+                    pOut.println(fromUser);
+                    break;
+                }
+                else
+                {
+                    fromUser = "OK";
+                    pOut.println(fromUser);
+                }
+    
+            } catch (Exception e) {
+                System.err.println("Error al verificar la firma: " + e.getMessage());
+                
+            }
 
 
 
@@ -76,7 +118,7 @@ public class ProtocoloCliente {
             
             ejecutar = false;
         }
-    }
+        }
 
     // Método para cifrar un BigInteger con la llave pública de un cliente
     public static byte[] cifrarReto(BigInteger message, PublicKey publicKey) {

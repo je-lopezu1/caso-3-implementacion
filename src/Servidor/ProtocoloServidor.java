@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.PrivateKey;
+import java.security.Signature;
 import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,7 +18,7 @@ public class ProtocoloServidor {
     String outputLine;
     int estado = 0;
 
-    while (estado < 3 && (inputLine = pIn.readLine()) != null) {
+    while (estado < 3 && (inputLine = pIn.readLine()) != null) { //TODO cambiar max estados
         System.out.println("Entrada a procesar: " + inputLine);
         switch (estado) {
             case 0: //VERIFICACIÓN DEL RETO
@@ -89,17 +90,42 @@ public class ProtocoloServidor {
                     String Pstring = Base64.getEncoder().encodeToString(P.toByteArray());
                     String Gstring = Base64.getEncoder().encodeToString(G.toByteArray());
                     String GXstring = Base64.getEncoder().encodeToString(Gx.toByteArray());
+                    //Mandar P,G y G^X
                     outputLine = Pstring;
                     pOut.println(outputLine);
                     outputLine = Gstring;
                     pOut.println(outputLine);
                     outputLine = GXstring;
-                    
+
+                            // Convertir los valores de G, P, y Gx a bytes y concatenarlos
+                    byte[] gBytes = G.toByteArray();
+                    byte[] pBytes = P.toByteArray();
+                    byte[] gxBytes = Gx.toByteArray();
+
+                    // Concatenar todos los bytes en un solo arreglo
+                    byte[] dataToSign = new byte[gBytes.length + pBytes.length + gxBytes.length];
+                    System.arraycopy(gBytes, 0, dataToSign, 0, gBytes.length);
+                    System.arraycopy(pBytes, 0, dataToSign, gBytes.length, pBytes.length);
+                    System.arraycopy(gxBytes, 0, dataToSign, gBytes.length + pBytes.length, gxBytes.length);
+
+                    // Configurar el objeto Signature con SHA1withRSA y la llave privada
+                    Signature signature = Signature.getInstance("SHA1withRSA");
+                    signature.initSign(privateKey);
+
+                    // Firmar los datos
+                    signature.update(dataToSign);
+                    byte[] firmaBytes = signature.sign(); // Devuelve la firma como arreglo de bytes
+                    BigInteger firma = new BigInteger(firmaBytes);
+                    String firmaString = Base64.getEncoder().encodeToString(firma.toByteArray());
+                    System.out.println(firmaBytes);
+                    outputLine = firmaString;
+                    pOut.println(outputLine);
+                    estado++;
 
                 } catch (Exception e) {
                     outputLine = "ERROR en argumento esperado";
+                    System.err.println("Error al ejecutar el comando o parsear la salida o al procesar la firma: " + e.getMessage());
                     estado = 0;
-                    System.err.println("Error al ejecutar el comando o parsear la salida: " + e.getMessage());
                 }
                 break;
 
