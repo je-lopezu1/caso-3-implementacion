@@ -16,10 +16,34 @@ public class ProtocoloCliente {
         boolean ejecutar = true;
 
         while (ejecutar) {
+            //VERIFICACIÓN DE RETO
             BigInteger reto = new BigInteger(256, new java.util.Random());
             byte[] retoCifrado = cifrarReto(reto, publicKey);
             String retoCifradoStr = Base64.getEncoder().encodeToString(retoCifrado);
+            //manda mensaje cifrado al servidor
             fromUser = retoCifradoStr;
+            pOut.println(fromUser);
+            // lee la respuesta del servidor
+            if ((fromServer = pIn.readLine()) != null) {
+                System.out.println("Respuesta del Servidor: " + fromServer);
+            }
+            byte[] rtaBytes = Base64.getDecoder().decode(fromServer);
+            BigInteger rtaConverted = new BigInteger(rtaBytes);
+            boolean verificacion = reto.equals(rtaConverted);
+            if (!verificacion)
+            {
+                fromUser = "ERROR";
+                pOut.println(fromUser);
+                break;
+            }
+            else
+            {
+                fromUser = "OK";
+                pOut.println(fromUser);
+            }
+            //VERIFICACIÓN DE LA FIRMA
+            fromUser = null;
+            fromUser = stdIn.readLine();
 
             // si el usuario no ingresó null
             if (fromUser != null) {
@@ -34,22 +58,7 @@ public class ProtocoloCliente {
                 pOut.println(fromUser);
             }
 
-            // lee la respuesta del servidor
-            if ((fromServer = pIn.readLine()) != null) {
-                System.out.println("Respuesta del Servidor: " + fromServer);
-            }
-            byte[] rtaBytes = Base64.getDecoder().decode(fromServer);
-            BigInteger rtaConverted = new BigInteger(rtaBytes);
-            boolean verificacion = reto.equals(rtaConverted);
-            if (!verificacion)
-            {
-                System.out.println("ERROR");
-                break;
-            }
-            else
-            {
-                System.out.println("OK");
-            }
+            
             ejecutar = false;
         }
     }

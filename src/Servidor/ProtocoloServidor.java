@@ -1,6 +1,7 @@
 package Servidor;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -17,7 +18,7 @@ public class ProtocoloServidor {
     while (estado < 3 && (inputLine = pIn.readLine()) != null) {
         System.out.println("Entrada a procesar: " + inputLine);
         switch (estado) {
-            case 0:
+            case 0: //VERIFICACIÓN DEL RETO
                 try{
 
                     byte[] mensaje = Base64.getDecoder().decode(inputLine);
@@ -31,15 +32,64 @@ public class ProtocoloServidor {
                 }
                 break;
 
-            case 1:
+            case 1: //GENERAR Y MANDAR FIRMA
                 try {
-                    int val = Integer.parseInt(inputLine);
-                    val--;
-                    outputLine = "" + val;
+                    // Ejecutar el comando OpenSSL para obtener G y P
+                    
+                    @SuppressWarnings("deprecation")
+                    Process process = Runtime.getRuntime().exec("openssl dhparam -text 1024");
+                    System.out.println(process);
+
+                    // Leer la salida del comando
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String line;
+                    StringBuilder gHex = new StringBuilder();
+                    StringBuilder pHex = new StringBuilder();
+                    boolean readingP = false, readingG = false;
+
+                    // Procesar la salida para extraer G y P en formato hexadecimal
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.startsWith("prime")) {
+                            readingP = true;
+                            readingG = false;
+                        } else if (line.startsWith("generator")) {
+                            readingG = true;
+                            readingP = false;
+                        } else if (readingP && !line.isEmpty()) {
+                            pHex.append(line);  // Concatenar cada línea de P
+                        } else if (readingG && !line.isEmpty()) {
+                            gHex.append(line);  // Concatenar cada línea de G
+                        }
+                    }
+
+                    process.waitFor();  // Esperar a que el proceso termine
+
+                    
+                    // Convertir G y P a BigInteger
+                    BigInteger G = new BigInteger(gHex.toString(), 16);
+                    System.out.println(G);
+                    BigInteger P = new BigInteger(pHex.toString(), 16);
+
+                    // Generar un valor aleatorio para x
+                    BigInteger x = new BigInteger(1024, new java.security.SecureRandom());
+
+                    // Calcular G^x mod P
+                    BigInteger Gx = G.modPow(x, P);
+                    
+
+                    // Puedes almacenar estos valores o enviarlos según lo que necesites en el caso 1
+                    System.out.println("Valor de G: " + G);
+                    System.out.println("Valor de P: " + P);
+                    System.out.println("Valor de G^x mod P: " + Gx);
+                    outputLine = "ADIOS";
+                    // Incrementar el estado si todo se ejecuta correctamente
                     estado++;
+
                 } catch (Exception e) {
                     outputLine = "ERROR en argumento esperado";
                     estado = 0;
+                    System.err.println("Error en la generación de G, P o G^x: " + e.getMessage());
                 }
                 break;
 
