@@ -20,12 +20,11 @@ public class KeyGenerator {
             // Generador de pares de llaves
             KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
             keyPairGen.initialize(1024); // Longitud de llave de 1024 bits
-
+            
             // Generación del par de llaves
             KeyPair keyPair = keyPairGen.generateKeyPair();
             publicKey = keyPair.getPublic();
             privateKey = keyPair.getPrivate();
-            System.out.println(publicKey);
 
             // Convertir las llaves a formato String (Base64)
             String publicKeyEncoded = Base64.getEncoder().encodeToString(publicKey.getEncoded());

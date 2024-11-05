@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.PublicKey;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 
@@ -17,8 +18,8 @@ public class ProtocoloCliente {
         while (ejecutar) {
             BigInteger reto = new BigInteger(256, new java.util.Random());
             byte[] retoCifrado = cifrarReto(reto, publicKey);
-
-            fromUser = retoCifrado.toString();
+            String retoCifradoStr = Base64.getEncoder().encodeToString(retoCifrado);
+            fromUser = retoCifradoStr;
 
             // si el usuario no ingresó null
             if (fromUser != null) {
@@ -36,6 +37,18 @@ public class ProtocoloCliente {
             // lee la respuesta del servidor
             if ((fromServer = pIn.readLine()) != null) {
                 System.out.println("Respuesta del Servidor: " + fromServer);
+            }
+            byte[] rtaBytes = Base64.getDecoder().decode(fromServer);
+            BigInteger rtaConverted = new BigInteger(rtaBytes);
+            boolean verificacion = reto.equals(rtaConverted);
+            if (!verificacion)
+            {
+                System.out.println("ERROR");
+                break;
+            }
+            else
+            {
+                System.out.println("OK");
             }
             ejecutar = false;
         }

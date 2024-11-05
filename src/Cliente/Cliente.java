@@ -73,10 +73,7 @@ public class Cliente {
 
             publicKey = keyFactory.generatePublic(keySpec);
 
-            boolean iguales = publicKey.equals(KeyGenerator.getPublicKey());
-            System.out.println("Las llaves son iguales: " + iguales);
-            System.out.println(publicKey);
-            //System.out.println(KeyGenerator.getPrivateKey());
+            
             
 
         } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {

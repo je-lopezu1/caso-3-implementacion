@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.PrivateKey;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 
@@ -18,10 +19,12 @@ public class ProtocoloServidor {
         switch (estado) {
             case 0:
                 try{
-                    byte[] mensaje = inputLine.getBytes();
+
+                    byte[] mensaje = Base64.getDecoder().decode(inputLine);
                     BigInteger rta = desencriptarReto(mensaje, privateKey);
+                    String rtaString = Base64.getEncoder().encodeToString(rta.toByteArray());
                     estado++;
-                    outputLine = "R recibido";
+                    outputLine = rtaString;
                 } catch (Exception e) {
                     outputLine = "ERROR en argumento esperado";
                     estado = 0;

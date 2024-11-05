@@ -125,7 +125,7 @@ public class Servidor{
     public static void leerLlaves() {
         // Leer las llaves almacenadas en los archivos
         try {
-            System.out.println(KeyGenerator.getPublicKey());
+            
             byte[] privateBytes = Files.readAllBytes(Paths.get("src/Servidor/privateKeys.txt"));
             byte[] decodedKey = Base64.getDecoder().decode(privateBytes);
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKey);
@@ -133,10 +133,7 @@ public class Servidor{
 
             privateKey = keyFactory.generatePrivate(keySpec);
 
-            // Sin iguales las llaves?
-            boolean iguales = privateKey.equals(KeyGenerator.getPrivateKey());
-            System.out.println("Las llaves son iguales: " + iguales);
-            //System.out.println(privateKey);
+            
             
             
 
