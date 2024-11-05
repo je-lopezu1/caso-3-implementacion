@@ -6,6 +6,8 @@ import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
 
@@ -34,62 +36,70 @@ public class ProtocoloServidor {
 
             case 1: //GENERAR Y MANDAR FIRMA
                 try {
-                    // Ejecutar el comando OpenSSL para obtener G y P
-                    
+                            // Ejecuta el comando OpenSSL
                     @SuppressWarnings("deprecation")
                     Process process = Runtime.getRuntime().exec("openssl dhparam -text 1024");
-                    System.out.println(process);
 
-                    // Leer la salida del comando
+                    // Lee la salida del comando
                     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     String line;
-                    StringBuilder gHex = new StringBuilder();
-                    StringBuilder pHex = new StringBuilder();
-                    boolean readingP = false, readingG = false;
+                    StringBuilder output = new StringBuilder();
 
-                    // Procesar la salida para extraer G y P en formato hexadecimal
+                    // Almacena toda la salida para procesarla después
                     while ((line = reader.readLine()) != null) {
-                        line = line.trim();
-                        if (line.startsWith("prime")) {
-                            readingP = true;
-                            readingG = false;
-                        } else if (line.startsWith("generator")) {
-                            readingG = true;
-                            readingP = false;
-                        } else if (readingP && !line.isEmpty()) {
-                            pHex.append(line);  // Concatenar cada línea de P
-                        } else if (readingG && !line.isEmpty()) {
-                            gHex.append(line);  // Concatenar cada línea de G
-                        }
+                        output.append(line).append("\n");
+                    }
+                    reader.close();
+                    process.waitFor();
+
+                    // Convertir la salida completa en un String
+                    String opensslOutput = output.toString();
+
+                    // Expresiones regulares para capturar los valores de P y G
+                    Pattern pPattern = Pattern.compile("P:\\s+((?:[0-9a-f]{2}:)+[0-9a-f]{2})", Pattern.CASE_INSENSITIVE);
+                    Pattern gPattern = Pattern.compile("G:\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
+
+                    // Buscar el valor de P
+                    Matcher pMatcher = pPattern.matcher(opensslOutput);
+                    StringBuilder pHex = new StringBuilder();
+                    if (pMatcher.find()) {
+                        pHex.append(pMatcher.group(1).replace(":", ""));
                     }
 
-                    process.waitFor();  // Esperar a que el proceso termine
+                    // Buscar el valor de G
+                    Matcher gMatcher = gPattern.matcher(opensslOutput);
+                    String gValue = null;
+                    if (gMatcher.find()) {
+                        gValue = gMatcher.group(1);
+                    }
 
-                    
-                    // Convertir G y P a BigInteger
-                    BigInteger G = new BigInteger(gHex.toString(), 16);
-                    System.out.println(G);
+                    // Convertir P y G a BigInteger
                     BigInteger P = new BigInteger(pHex.toString(), 16);
+                    BigInteger G = new BigInteger(gValue);
 
-                    // Generar un valor aleatorio para x
-                    BigInteger x = new BigInteger(1024, new java.security.SecureRandom());
-
-                    // Calcular G^x mod P
-                    BigInteger Gx = G.modPow(x, P);
-                    
-
-                    // Puedes almacenar estos valores o enviarlos según lo que necesites en el caso 1
-                    System.out.println("Valor de G: " + G);
+                    // Imprimir los valores de P y G
                     System.out.println("Valor de P: " + P);
+                    System.out.println("Valor de G: " + G);
+
+                    // Generar un valor aleatorio x y calcular G^x mod P
+                    BigInteger x = new BigInteger(1024, new java.security.SecureRandom());
+                    BigInteger Gx = G.modPow(x, P);
                     System.out.println("Valor de G^x mod P: " + Gx);
-                    outputLine = "ADIOS";
-                    // Incrementar el estado si todo se ejecuta correctamente
-                    estado++;
+
+                    String Pstring = Base64.getEncoder().encodeToString(P.toByteArray());
+                    String Gstring = Base64.getEncoder().encodeToString(G.toByteArray());
+                    String GXstring = Base64.getEncoder().encodeToString(Gx.toByteArray());
+                    outputLine = Pstring;
+                    pOut.println(outputLine);
+                    outputLine = Gstring;
+                    pOut.println(outputLine);
+                    outputLine = GXstring;
+                    
 
                 } catch (Exception e) {
                     outputLine = "ERROR en argumento esperado";
                     estado = 0;
-                    System.err.println("Error en la generación de G, P o G^x: " + e.getMessage());
+                    System.err.println("Error al ejecutar el comando o parsear la salida: " + e.getMessage());
                 }
                 break;
 

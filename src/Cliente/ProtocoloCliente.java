@@ -42,6 +42,21 @@ public class ProtocoloCliente {
                 pOut.println(fromUser);
             }
             //VERIFICACIÓN DE LA FIRMA
+            String Pstring = pIn.readLine(); 
+            byte[] Pbytes = Base64.getDecoder().decode(Pstring);
+            BigInteger P = new BigInteger(Pbytes);
+            String Gstring = pIn.readLine(); 
+            byte[] Gbytes = Base64.getDecoder().decode(Gstring);
+            BigInteger G = new BigInteger(Gbytes);
+            String GXstring = pIn.readLine(); 
+            byte[] GXbytes = Base64.getDecoder().decode(GXstring);
+            BigInteger GX = new BigInteger(GXbytes);
+            System.out.println("Respuesta del Servidor: " + P);
+            System.out.println("Respuesta del Servidor: " + G);
+            System.out.println("Respuesta del Servidor: " + GX);
+
+
+
             fromUser = null;
             fromUser = stdIn.readLine();
 

@@ -1,59 +1,71 @@
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import Cliente.Cliente;
 import Servidor.Servidor;
 import Servidor.KeyGenerator;
 
 public class App {
+   
     public static void main(String[] args) throws Exception {
-        Scanner scanner = new Scanner(System.in);
-        int opcion;
+        try {
+            // Ejecuta el comando OpenSSL
+            @SuppressWarnings("deprecation")
+            Process process = Runtime.getRuntime().exec("openssl dhparam -text 1024");
 
-        do {
-            System.out.println("Menú de opciones:");
-            System.out.println("1. Opción 1");
-            System.out.println("2. Opción 2");
-            System.out.println("0. Salir");
-            System.out.print("Seleccione una opción: ");
+            // Lee la salida del comando
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            StringBuilder output = new StringBuilder();
 
-            opcion = scanner.nextInt();
+            // Almacena toda la salida para procesarla después
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+            reader.close();
+            process.waitFor();
 
-            switch (opcion) {
-                case 1:
-                    System.out.println("Has seleccionado Opción 1.");
-                    // Lógica para la Opción 1
-                    opcion1();
-                    break;
-                case 2:
-                    System.out.println("Has seleccionado Opción 2.");
-                    // Lógica para la Opción 2
-                    break;
-                case 0:
-                    System.out.println("Saliendo del programa.");
-                    break;
-                default:
-                    System.out.println("Opción no válida. Intente de nuevo.");
+            // Convertir la salida completa en un String
+            String opensslOutput = output.toString();
+
+            // Expresiones regulares para capturar los valores de P y G
+            Pattern pPattern = Pattern.compile("P:\\s+((?:[0-9a-f]{2}:)+[0-9a-f]{2})", Pattern.CASE_INSENSITIVE);
+            Pattern gPattern = Pattern.compile("G:\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
+
+            // Buscar el valor de P
+            Matcher pMatcher = pPattern.matcher(opensslOutput);
+            StringBuilder pHex = new StringBuilder();
+            if (pMatcher.find()) {
+                pHex.append(pMatcher.group(1).replace(":", ""));
             }
 
-            System.out.println(); // Espacio adicional para mejor legibilidad
-        } while (opcion != 0);
-
-        scanner.close();
-
-        
-        File publicKeysFile = new File("src/Cliente/publicKeys.txt");
-            File privateKeysFile = new File("src/Servidor/privateKeys.txt");
-
-            if (publicKeysFile.exists() && publicKeysFile.delete()) {
-                System.out.println("Archivo de llaves públicas eliminado.");
-            } else {
-                System.err.println("No se pudo eliminar el archivo de llaves públicas.");
+            // Buscar el valor de G
+            Matcher gMatcher = gPattern.matcher(opensslOutput);
+            String gValue = null;
+            if (gMatcher.find()) {
+                gValue = gMatcher.group(1);
             }
 
-            if (privateKeysFile.exists() && privateKeysFile.delete()) {
-                System.out.println("Archivo de llaves privadas eliminado.");
-            } else {
-                System.err.println("No se pudo eliminar el archivo de llaves privadas.");
+            // Convertir P y G a BigInteger
+            BigInteger P = new BigInteger(pHex.toString(), 16);
+            BigInteger G = new BigInteger(gValue);
+
+            // Imprimir los valores de P y G
+            System.out.println("Valor de P: " + P);
+            System.out.println("Valor de G: " + G);
+
+            // Generar un valor aleatorio x y calcular G^x mod P
+            BigInteger x = new BigInteger(1024, new java.security.SecureRandom());
+            BigInteger Gx = G.modPow(x, P);
+            System.out.println("Valor de G^x mod P: " + Gx);
+
+        } catch (Exception e) {
+            System.err.println("Error al ejecutar el comando o parsear la salida: " + e.getMessage());
         }
     }
 
