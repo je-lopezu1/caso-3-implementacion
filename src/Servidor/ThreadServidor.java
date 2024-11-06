@@ -31,7 +31,8 @@ public class ThreadServidor extends Thread {
             BufferedReader lector = new BufferedReader(new InputStreamReader(sktCliente.getInputStream()));
 
             try {
-                ProtocoloServidor.procesar(lector, escritor, privateKey);
+                BaseDatos baseDatos = new BaseDatos();
+                ProtocoloServidor.procesar(lector, escritor, privateKey, baseDatos);
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

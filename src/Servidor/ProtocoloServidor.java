@@ -24,7 +24,7 @@ public class ProtocoloServidor {
     private static SecretKey K_AB2;
     private static IvParameterSpec vectorIV;
 
-    public static void procesar(BufferedReader pIn, PrintWriter pOut, PrivateKey privateKey) throws Exception {
+    public static void procesar(BufferedReader pIn, PrintWriter pOut, PrivateKey privateKey, BaseDatos baseDatos) throws Exception {
     String inputLine;
     String outputLine;
     int estado = 0;
@@ -217,11 +217,13 @@ public class ProtocoloServidor {
                 boolean verificadoPaquete = desencriptarHMAC(idpaquete_descifrado_string, idpaquete_hmac_string, K_AB2);
                 System.out.println("verificación de integridad con hmac: " + verificadoPaquete);
 
-                String estadoPaquete = obtenerEstado(id_descifrado_string, idpaquete_descifrado_string);
+                System.out.println("Consultando la base de datos...");
+                String estadoPaquete = obtenerEstado(id_descifrado_string, idpaquete_descifrado_string, baseDatos);
                 String estadoPaqueteCifrado = cifrarID(estadoPaquete, K_AB1, vectorIV);
                 String estadoPaqueteHMAC = generarHMAC(estadoPaquete, K_AB2);
                 pOut.println(estadoPaqueteCifrado);
                 pOut.println(estadoPaqueteHMAC);
+                System.out.println("Enviando estado de paquete al usuario...");
                 estado++;
 
 
@@ -275,9 +277,9 @@ public class ProtocoloServidor {
         return MessageDigest.isEqual(computedHmac, receivedHmac); // Compara ambos HMACs
     }
 
-    public static String obtenerEstado(String id, String id_pedido)
+    public static String obtenerEstado(String id, String id_pedido, BaseDatos baseDatos)
     {
-        return "DESCONOCIDO";
+        return baseDatos.obtenerEstadoPaquete(id, id_pedido);
     }
 
       // Método para cifrar el ID con la clave K_AB1

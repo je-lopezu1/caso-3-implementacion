@@ -175,11 +175,15 @@ public class ProtocoloCliente {
             String estadoPaqueteHMAC = pIn.readLine();
             System.out.println("Estado de paquete con HMAC: " + estadoPaqueteHMAC);
 
-            String estadoPaquete = desencriptarID(estadoPaqueteCifrado, K_AB1, vectorIV);
+            String IDestadoPaquete = desencriptarID(estadoPaqueteCifrado, K_AB1, vectorIV);
+            System.out.println("ID Estado de paquete: " + IDestadoPaquete);
+
+            boolean verificado = desencriptarHMAC(IDestadoPaquete, estadoPaqueteHMAC, K_AB2);
+            System.out.println("verificación de integridad con hmac: " + verificado);
+
+            String estadoPaquete = obtenerNombreEstado(IDestadoPaquete);
             System.out.println("Estado de paquete: " + estadoPaquete);
 
-            boolean verificado = desencriptarHMAC(estadoPaquete, estadoPaqueteHMAC, K_AB2);
-            System.out.println("verificación de integridad con hmac: " + verificado);
 
 
 
@@ -260,6 +264,27 @@ public class ProtocoloCliente {
         return MessageDigest.isEqual(computedHmac, receivedHmac); // Compara ambos HMACs
     }
 
+     // Método para convertir el estado del paquete de número a texto
+     public static String obtenerNombreEstado(String estadoPaquete) {
+        switch (estadoPaquete) {
+            case "10":
+                return "ENOFICINA";
+            case "11":
+                return "RECOGIDO";
+            case "12":
+                return "ENCLASIFICACION";
+            case "13":
+                return "DESPACHADO";
+            case "14":
+                return "ENENTREGA";
+            case "15":
+                return "ENTREGADO";
+            case "16":
+                return "DESCONOCIDO";
+            default:
+                return "ESTADO_INVALIDO"; // Retorna un valor en caso de que el estado no esté en el rango esperado
+        }
+    }
    
 }
 
@@ -269,6 +294,5 @@ public class ProtocoloCliente {
 
 //TODO SECINIT
 
-//TODO estados
 
 //TODO terminar
