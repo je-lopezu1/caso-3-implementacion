@@ -194,6 +194,12 @@ public class ProtocoloServidor {
                 estado++;
                 break;
             case 3:
+                System.out.println("pop");
+                if (inputLine == "CONTINUAR")
+                {
+                    System.out.println("pop");
+                    inputLine = pIn.readLine();
+                }
                 String id_cifrado_string = inputLine;
                 System.out.println("id de usuario cifrado: " + id_cifrado_string);
 
@@ -225,10 +231,8 @@ public class ProtocoloServidor {
                 pOut.println(estadoPaqueteCifrado);
                 pOut.println(estadoPaqueteHMAC);
                 System.out.println("Enviando estado de paquete al usuario...");
-                estado++;
-
-
-
+                //estado++;
+                break;
             default:
                 outputLine = "ERROR";
                 estado = 0;

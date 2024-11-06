@@ -155,6 +155,9 @@ public class ProtocoloCliente {
             //byte[] iv = Base64.getDecoder().decode(ivString);
             //IvParameterSpec vectorIV = new IvParameterSpec(iv);
             //System.out.println("iv: " + vectorIV);
+            boolean seguirConsulta = true;
+
+            while(seguirConsulta){
             //Empezar consulta
 
             System.out.println("Ingrese el id del usuario: ");
@@ -185,11 +188,15 @@ public class ProtocoloCliente {
             String estadoPaquete = obtenerNombreEstado(IDestadoPaquete);
             System.out.println("Estado de paquete: " + estadoPaquete);
 
+            System.out.println("Escriba TERMINAR si desea terminar la sesión.");
+            System.out.println("Escriba CONTINUAR si desea hacer otra consulta.");
+            fromUser = stdIn.readLine();
+            if (fromUser.equalsIgnoreCase("TERMINAR")) {
+                seguirConsulta = false;
+            }
+        }
 
-
-
-
-            fromUser = null;
+           /*  fromUser = null;
             fromUser = stdIn.readLine();
 
             // si el usuario no ingresó null
@@ -203,10 +210,10 @@ public class ProtocoloCliente {
 
                 // envía el mensaje al servidor
                 pOut.println(fromUser);
-            }
+            }*/
 
             
-            //ejecutar = false;
+            ejecutar = false;
         }
         }
 
