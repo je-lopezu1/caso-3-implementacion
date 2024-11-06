@@ -2,6 +2,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +23,23 @@ public class App {
    
     public static void main(String[] args) throws Exception {
         try {
+            byte[] privateBytes = Files.readAllBytes(Paths.get("src/Servidor/privateKeys.txt"));
+            byte[] decodedKey = Base64.getDecoder().decode(privateBytes);
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKey);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+            PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+
+            byte[] publicBytes = Files.readAllBytes(Paths.get("src/Cliente/publicKeys.txt"));
+
+            // Convertir los bytes a objetos PublicKey y PrivateKey
+            byte[] decodedKey2 = Base64.getDecoder().decode(publicBytes);
+            X509EncodedKeySpec keySpec2 = new X509EncodedKeySpec(decodedKey2);
+            KeyFactory keyFactory2 = KeyFactory.getInstance("RSA");
+
+            PublicKey publicKey = keyFactory.generatePublic(keySpec2);
+
+
             // Ejecuta el comando OpenSSL
             @SuppressWarnings("deprecation")
             Process process = Runtime.getRuntime().exec("openssl dhparam -text 1024");
@@ -63,6 +89,36 @@ public class App {
             BigInteger x = new BigInteger(1024, new java.security.SecureRandom());
             BigInteger Gx = G.modPow(x, P);
             System.out.println("Valor de G^x mod P: " + Gx);
+            byte[] gBytes = G.toByteArray();
+            byte[] pBytes = P.toByteArray();
+            byte[] gxBytes = Gx.toByteArray();
+
+                    // Concatenar todos los bytes en un solo arreglo
+            byte[] dataToSign  = new byte[gBytes.length + pBytes.length + gxBytes.length];
+            System.arraycopy(gBytes, 0, dataToSign, 0, gBytes.length);
+            System.arraycopy(pBytes, 0, dataToSign, gBytes.length, pBytes.length);
+            System.arraycopy(gxBytes, 0, dataToSign, gBytes.length + pBytes.length, gxBytes.length);
+
+            Signature signature = Signature.getInstance("SHA1withRSA");
+            signature.initSign(privateKey);
+
+                    
+                    // Firmar los datos
+            signature.update(dataToSign);
+            byte[] firmaBytes = signature.sign();
+            String firmaString = Base64.getEncoder().encodeToString(firmaBytes);
+            byte[] FIRMA = Base64.getDecoder().decode(firmaString);
+
+        Signature signature2 = Signature.getInstance("SHA1withRSA");
+            signature2.initVerify(publicKey);
+
+            // Actualizar el objeto Signature con los datos originales
+            signature2.update(dataToSign);
+            // Verificar la firma
+            boolean verificacionFirma = signature2.verify(FIRMA);
+            System.out.println(verificacionFirma);
+
+
 
         } catch (Exception e) {
             System.err.println("Error al ejecutar el comando o parsear la salida: " + e.getMessage());

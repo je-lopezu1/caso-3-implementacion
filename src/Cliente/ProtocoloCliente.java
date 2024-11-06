@@ -53,8 +53,8 @@ public class ProtocoloCliente {
             byte[] GXbytes = Base64.getDecoder().decode(GXstring);
             BigInteger GX = new BigInteger(GXbytes);
             String firmaString = pIn.readLine(); 
-            byte[] firmaBytes = Base64.getDecoder().decode(firmaString);
-            BigInteger firma = new BigInteger(firmaBytes);
+            byte[] firma = Base64.getDecoder().decode(firmaString);
+            //byte[] firma = firmaString.getBytes();
             System.out.println("Respuesta del Servidor: Valor de P: " + P);
             System.out.println("Respuesta del Servidor: Valor de G: " + G);
             System.out.println("Respuesta del Servidor: Valor de G^x: " + GX);
@@ -78,7 +78,7 @@ public class ProtocoloCliente {
                 // Actualizar el objeto Signature con los datos originales
                 signature.update(dataToVerify);
                 // Verificar la firma
-                boolean verificacionFirma = signature.verify(firma.toByteArray());
+                boolean verificacionFirma = signature.verify(firma);
                 System.out.println(verificacionFirma);
                 if (!verificacionFirma)
                 {

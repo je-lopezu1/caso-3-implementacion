@@ -96,6 +96,7 @@ public class ProtocoloServidor {
                     outputLine = Gstring;
                     pOut.println(outputLine);
                     outputLine = GXstring;
+                    pOut.println(outputLine);
 
                             // Convertir los valores de G, P, y Gx a bytes y concatenarlos
                     byte[] gBytes = G.toByteArray();
@@ -112,14 +113,16 @@ public class ProtocoloServidor {
                     Signature signature = Signature.getInstance("SHA1withRSA");
                     signature.initSign(privateKey);
 
+                    
                     // Firmar los datos
                     signature.update(dataToSign);
                     byte[] firmaBytes = signature.sign(); // Devuelve la firma como arreglo de bytes
-                    BigInteger firma = new BigInteger(firmaBytes);
-                    String firmaString = Base64.getEncoder().encodeToString(firma.toByteArray());
-                    System.out.println(firmaBytes);
+                    //String firmaString = signature.sign().toString();
+                    String firmaString = Base64.getEncoder().encodeToString(firmaBytes);
+
+                    //System.out.println(firmaBytes);
                     outputLine = firmaString;
-                    pOut.println(outputLine);
+                    //pOut.println(outputLine);
                     estado++;
 
                 } catch (Exception e) {
