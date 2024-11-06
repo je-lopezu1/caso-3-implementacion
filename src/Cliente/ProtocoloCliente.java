@@ -169,6 +169,19 @@ public class ProtocoloCliente {
             pOut.println(idpaquete_cifrado_string);
             pOut.println(idpaqeute_hmac_string);
             
+            String estadoPaqueteCifrado = pIn.readLine();
+            System.out.println("Estado de paquete cifrado: " + estadoPaqueteCifrado);
+
+            String estadoPaqueteHMAC = pIn.readLine();
+            System.out.println("Estado de paquete con HMAC: " + estadoPaqueteHMAC);
+
+            String estadoPaquete = desencriptarID(estadoPaqueteCifrado, K_AB1, vectorIV);
+            System.out.println("Estado de paquete: " + estadoPaquete);
+
+            boolean verificado = desencriptarHMAC(estadoPaquete, estadoPaqueteHMAC, K_AB2);
+            System.out.println("verificación de integridad con hmac: " + verificado);
+
+
 
 
             fromUser = null;
@@ -227,6 +240,35 @@ public class ProtocoloCliente {
         return Base64.getEncoder().encodeToString(hmacBytes);
     }
 
+
+     // Método para descifrar el ID con la clave K_AB1 y el IV recibido
+     public static String desencriptarID(String encryptedIdBase64, SecretKey K_AB1, IvParameterSpec ivSpec) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, K_AB1, ivSpec);
+        byte[] decryptedIdBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedIdBase64));
+        return new String(decryptedIdBytes); // Devuelve el ID descifrado como String
+    }
+
+     // Método para generar HMAC del ID con la clave K_AB2 y verificar con el HMAC recibido
+    public static boolean desencriptarHMAC(String id, String hmacBase64, SecretKey K_AB2) throws Exception {
+        Mac hmac = Mac.getInstance("HmacSHA384");
+        hmac.init(K_AB2);
+        byte[] computedHmac = hmac.doFinal(Base64.getDecoder().decode(id));
+
+        // Decodificar el HMAC recibido en Base64 y compararlo con el HMAC calculado
+        byte[] receivedHmac = Base64.getDecoder().decode(hmacBase64);
+        return MessageDigest.isEqual(computedHmac, receivedHmac); // Compara ambos HMACs
+    }
+
    
 }
 
+//TODO arreglar valores de 5 o 9 bytes
+
+//TODO Crear cliente iterativo
+
+//TODO SECINIT
+
+//TODO estados
+
+//TODO terminar

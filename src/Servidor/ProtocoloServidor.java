@@ -216,7 +216,16 @@ public class ProtocoloServidor {
 
                 boolean verificadoPaquete = desencriptarHMAC(idpaquete_descifrado_string, idpaquete_hmac_string, K_AB2);
                 System.out.println("verificación de integridad con hmac: " + verificadoPaquete);
+
+                String estadoPaquete = obtenerEstado(id_descifrado_string, idpaquete_descifrado_string);
+                String estadoPaqueteCifrado = cifrarID(estadoPaquete, K_AB1, vectorIV);
+                String estadoPaqueteHMAC = generarHMAC(estadoPaquete, K_AB2);
+                pOut.println(estadoPaqueteCifrado);
+                pOut.println(estadoPaqueteHMAC);
                 estado++;
+
+
+
             default:
                 outputLine = "ERROR";
                 estado = 0;
@@ -265,5 +274,27 @@ public class ProtocoloServidor {
         byte[] receivedHmac = Base64.getDecoder().decode(hmacBase64);
         return MessageDigest.isEqual(computedHmac, receivedHmac); // Compara ambos HMACs
     }
+
+    public static String obtenerEstado(String id, String id_pedido)
+    {
+        return "DESCONOCIDO";
+    }
+
+      // Método para cifrar el ID con la clave K_AB1
+      public static String cifrarID(String Id, SecretKey K_AB1, IvParameterSpec ivSpec) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, K_AB1, ivSpec);
+        byte[] encryptedId = cipher.doFinal(Id.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedId);
+    }
+
+    // Método para generar HMAC del ID con la clave K_AB2
+    public static String generarHMAC(String Id, SecretKey K_AB2) throws Exception {
+        Mac hmac = Mac.getInstance("HmacSHA384");
+        hmac.init(K_AB2);
+        byte[] hmacBytes = hmac.doFinal(Base64.getDecoder().decode(Id));
+        return Base64.getEncoder().encodeToString(hmacBytes);
+    }
+
 
 }
