@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -14,6 +15,11 @@ import java.util.Base64;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 import Cliente.Cliente;
 import Servidor.Servidor;
@@ -128,4 +134,42 @@ public class App {
     public static void opcion1() {
         KeyGenerator.generateAndStoreKeys();
     }
+
+
+        public static String desencriptarID(String encryptedIdBase64, SecretKey K_AB1, IvParameterSpec ivSpec) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, K_AB1, ivSpec);
+        byte[] decryptedIdBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedIdBase64));
+        return new String(decryptedIdBytes); // Devuelve el ID descifrado como String
+    }
+
+     // Método para generar HMAC del ID con la clave K_AB2 y verificar con el HMAC recibido
+    public static boolean desencriptarHMAC(String id, String hmacBase64, SecretKey K_AB2) throws Exception {
+        Mac hmac = Mac.getInstance("HmacSHA384");
+        hmac.init(K_AB2);
+        byte[] computedHmac = hmac.doFinal(Base64.getDecoder().decode(id));
+
+        // Decodificar el HMAC recibido en Base64 y compararlo con el HMAC calculado
+        byte[] receivedHmac = Base64.getDecoder().decode(hmacBase64);
+        return MessageDigest.isEqual(computedHmac, receivedHmac); // Compara ambos HMACs
+    }
+
+
+
+     // Método para cifrar el ID con la clave K_AB1
+     public static String cifrarID(String Id, SecretKey K_AB1, IvParameterSpec ivSpec) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, K_AB1, ivSpec);
+        byte[] encryptedId = cipher.doFinal(Id.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedId);
+    }
+
+    // Método para generar HMAC del ID con la clave K_AB2
+    public static String generarHMAC(String Id, SecretKey K_AB2) throws Exception {
+        Mac hmac = Mac.getInstance("HmacSHA384");
+        hmac.init(K_AB2);
+        byte[] hmacBytes = hmac.doFinal(Base64.getDecoder().decode(Id));
+        return Base64.getEncoder().encodeToString(hmacBytes);
+    }
+
 }

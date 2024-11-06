@@ -113,6 +113,9 @@ public class ProtocoloCliente {
             // Calcular G^y mod P
             BigInteger Gy = G.modPow(y, P);
             System.out.println("Valor de G^y: " + Gy);
+             //mandar G^y
+             String GYstring = Base64.getEncoder().encodeToString(Gy.toByteArray());
+             pOut.println(GYstring);
 
             // Calcular (G^x)^y mod P para obtener la clave compartida
             BigInteger sharedSecret = GX.modPow(y, P);
@@ -130,17 +133,15 @@ public class ProtocoloCliente {
             byte[] K_AB2bytes = new byte[32];
             System.arraycopy(hash, 0, K_AB1bytes, 0, 32);
             System.arraycopy(hash, 32, K_AB2bytes, 0, 32);
-            K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
-            K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
+            
             String K_AB1st = Base64.getEncoder().encodeToString(K_AB1bytes);
             String K_AB2st = Base64.getEncoder().encodeToString(K_AB2bytes);
             System.out.println("K_AB1: " + K_AB1st);
             System.out.println("K_AB2: " + K_AB2st);
+            K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
+            K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
 
-
-            //mandar G^y
-            String GYstring = Base64.getEncoder().encodeToString(Gy.toByteArray());
-            pOut.println(GYstring);
+           
             }
             catch (Exception e) {
                 System.err.println("Error en el proceso de creación de llaves simetricas: " + e.getMessage());
@@ -148,8 +149,10 @@ public class ProtocoloCliente {
             //recibir vector
             String ivString = pIn.readLine(); 
             //System.out.println("iv: " + ivString);
-            byte[] iv = Base64.getDecoder().decode(ivString);
-            IvParameterSpec vectorIV = new IvParameterSpec(iv);
+            byte[] ivBytes = Base64.getDecoder().decode(ivString);
+            IvParameterSpec vectorIV = new IvParameterSpec(ivBytes);
+            //byte[] iv = Base64.getDecoder().decode(ivString);
+            //IvParameterSpec vectorIV = new IvParameterSpec(iv);
             //System.out.println("iv: " + vectorIV);
             //Empezar consulta
 

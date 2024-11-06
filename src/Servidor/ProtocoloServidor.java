@@ -147,7 +147,7 @@ public class ProtocoloServidor {
                 break;
 
             case 2:
-                String GYstring = inputLine;
+                String GYstring = pIn.readLine();
                 byte[] GYbytes = Base64.getDecoder().decode(GYstring);
                 BigInteger GY = new BigInteger(GYbytes);
                 System.out.println("Valor de G^y: " + GY);
@@ -167,36 +167,40 @@ public class ProtocoloServidor {
                 byte[] K_AB2bytes = new byte[32];
                 System.arraycopy(hash, 0, K_AB1bytes, 0, 32);
                 System.arraycopy(hash, 32, K_AB2bytes, 0, 32);
-                K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
-                K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
                 String K_AB1st = Base64.getEncoder().encodeToString(K_AB1bytes);
                 String K_AB2st = Base64.getEncoder().encodeToString(K_AB2bytes);
                 System.out.println("K_AB1: " + K_AB1st);
                 System.out.println("K_AB2: " + K_AB2st);
-
+                K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
+                K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
                 // Crear un arreglo de 16 bytes para el IV
                 byte[] iv = new byte[16];
                 // Usar SecureRandom para llenar el arreglo con valores aleatorios
                 SecureRandom secureRandom = new SecureRandom();
                 secureRandom.nextBytes(iv);
                 vectorIV = new IvParameterSpec(iv);
-
-                String ivString = Base64.getEncoder().encodeToString(iv);
+                byte[] IVbytes = vectorIV.getIV();
+                //String ivString = vectorIV.toString();
+                String ivString = Base64.getEncoder().encodeToString(IVbytes);
+                pOut.println(ivString);
+                
+                
+                
                 //System.out.println("iv: " + ivString);
                 //System.out.println("iv: " + vectorIV);
                 //mandar vector
-                pOut.println(ivString);
+                
                 estado++;
                 break;
             case 3:
                 String id_cifrado_string = inputLine;
-                System.out.println(id_cifrado_string);
+                System.out.println("id de usuario cifrado: " + id_cifrado_string);
                 String id_hmac_string = pIn.readLine();
-                System.out.println(id_hmac_string);
+                System.out.println("id con hmac: " + id_hmac_string);
                 String id_descifrado_string = desencriptarID(id_cifrado_string, K_AB1, vectorIV);
-                System.out.println(id_descifrado_string);
+                System.out.println("id usuario decifrado: " + id_descifrado_string);
                 boolean verificado = desencriptarHMAC(id_descifrado_string, id_hmac_string, K_AB2);
-                System.out.println(verificado);
+                System.out.println("verificación de integridad con hmac: " + verificado);
                 estado++;
             default:
                 outputLine = "ERROR";
