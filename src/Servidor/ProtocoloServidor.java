@@ -1,11 +1,9 @@
 package Servidor;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Signature;
@@ -14,19 +12,26 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class ProtocoloServidor {
     private static BigInteger P;
     private static BigInteger x;
-    public static void procesar(BufferedReader pIn, PrintWriter pOut, PrivateKey privateKey) throws IOException, NoSuchAlgorithmException {
+    private static SecretKey K_AB1;
+    private static SecretKey K_AB2;
+    private static IvParameterSpec vectorIV;
+
+    public static void procesar(BufferedReader pIn, PrintWriter pOut, PrivateKey privateKey) throws Exception {
     String inputLine;
     String outputLine;
     int estado = 0;
     
     
 
-    while (estado < 3 && (inputLine = pIn.readLine()) != null) { //TODO cambiar max estados
+    while (estado < 4 && (inputLine = pIn.readLine()) != null) { //TODO cambiar max estados
         System.out.println("Entrada a procesar: " + inputLine);
         switch (estado) {
             case 0: //VERIFICACIÓN DEL RETO
@@ -158,12 +163,14 @@ public class ProtocoloServidor {
                 byte[] hash = sha512.digest(sharedSecretBytes);
                 
                 // Dividir el hash en dos partes para obtener K_AB1 y K_AB2
-                byte[] K_AB1 = new byte[32];
-                byte[] K_AB2 = new byte[32];
-                System.arraycopy(hash, 0, K_AB1, 0, 32);
-                System.arraycopy(hash, 32, K_AB2, 0, 32);
-                String K_AB1st = Base64.getEncoder().encodeToString(K_AB1);
-                String K_AB2st = Base64.getEncoder().encodeToString(K_AB2);
+                byte[] K_AB1bytes = new byte[32];
+                byte[] K_AB2bytes = new byte[32];
+                System.arraycopy(hash, 0, K_AB1bytes, 0, 32);
+                System.arraycopy(hash, 32, K_AB2bytes, 0, 32);
+                K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
+                K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
+                String K_AB1st = Base64.getEncoder().encodeToString(K_AB1bytes);
+                String K_AB2st = Base64.getEncoder().encodeToString(K_AB2bytes);
                 System.out.println("K_AB1: " + K_AB1st);
                 System.out.println("K_AB2: " + K_AB2st);
 
@@ -172,16 +179,25 @@ public class ProtocoloServidor {
                 // Usar SecureRandom para llenar el arreglo con valores aleatorios
                 SecureRandom secureRandom = new SecureRandom();
                 secureRandom.nextBytes(iv);
-                IvParameterSpec vectorIV = new IvParameterSpec(iv);
+                vectorIV = new IvParameterSpec(iv);
 
                 String ivString = Base64.getEncoder().encodeToString(iv);
-                System.out.println("iv: " + ivString);
-                System.out.println("iv: " + vectorIV);
+                //System.out.println("iv: " + ivString);
+                //System.out.println("iv: " + vectorIV);
                 //mandar vector
                 pOut.println(ivString);
                 estado++;
                 break;
-
+            case 3:
+                String id_cifrado_string = inputLine;
+                System.out.println(id_cifrado_string);
+                String id_hmac_string = pIn.readLine();
+                System.out.println(id_hmac_string);
+                String id_descifrado_string = desencriptarID(id_cifrado_string, K_AB1, vectorIV);
+                System.out.println(id_descifrado_string);
+                boolean verificado = desencriptarHMAC(id_descifrado_string, id_hmac_string, K_AB2);
+                System.out.println(verificado);
+                estado++;
             default:
                 outputLine = "ERROR";
                 estado = 0;
@@ -210,6 +226,25 @@ public class ProtocoloServidor {
             System.err.println("Error al descifrar el mensaje: " + e.getMessage());
             return null;
         }
+    }
+
+     // Método para descifrar el ID con la clave K_AB1 y el IV recibido
+    public static String desencriptarID(String encryptedIdBase64, SecretKey K_AB1, IvParameterSpec ivSpec) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, K_AB1, ivSpec);
+        byte[] decryptedIdBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedIdBase64));
+        return new String(decryptedIdBytes); // Devuelve el ID descifrado como String
+    }
+
+     // Método para generar HMAC del ID con la clave K_AB2 y verificar con el HMAC recibido
+    public static boolean desencriptarHMAC(String id, String hmacBase64, SecretKey K_AB2) throws Exception {
+        Mac hmac = Mac.getInstance("HmacSHA384");
+        hmac.init(K_AB2);
+        byte[] computedHmac = hmac.doFinal(Base64.getDecoder().decode(id));
+
+        // Decodificar el HMAC recibido en Base64 y compararlo con el HMAC calculado
+        byte[] receivedHmac = Base64.getDecoder().decode(hmacBase64);
+        return MessageDigest.isEqual(computedHmac, receivedHmac); // Compara ambos HMACs
     }
 
 }

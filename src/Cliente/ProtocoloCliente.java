@@ -1,10 +1,8 @@
 package Cliente;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
@@ -14,9 +12,13 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class ProtocoloCliente {
-    public static void procesar(BufferedReader stdIn, BufferedReader pIn, PrintWriter pOut, PublicKey publicKey) throws IOException, NoSuchAlgorithmException {
+    private static SecretKey K_AB1;
+    private static SecretKey K_AB2;
+
+    public static void procesar(BufferedReader stdIn, BufferedReader pIn, PrintWriter pOut, PublicKey publicKey) throws Exception {
         String fromServer;
         String fromUser;
 
@@ -124,12 +126,14 @@ public class ProtocoloCliente {
             byte[] hash = sha512.digest(sharedSecretBytes);
             
             // Dividir el hash en dos partes para obtener K_AB1 y K_AB2
-            byte[] K_AB1 = new byte[32];
-            byte[] K_AB2 = new byte[32];
-            System.arraycopy(hash, 0, K_AB1, 0, 32);
-            System.arraycopy(hash, 32, K_AB2, 0, 32);
-            String K_AB1st = Base64.getEncoder().encodeToString(K_AB1);
-            String K_AB2st = Base64.getEncoder().encodeToString(K_AB2);
+            byte[] K_AB1bytes = new byte[32];
+            byte[] K_AB2bytes = new byte[32];
+            System.arraycopy(hash, 0, K_AB1bytes, 0, 32);
+            System.arraycopy(hash, 32, K_AB2bytes, 0, 32);
+            K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
+            K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
+            String K_AB1st = Base64.getEncoder().encodeToString(K_AB1bytes);
+            String K_AB2st = Base64.getEncoder().encodeToString(K_AB2bytes);
             System.out.println("K_AB1: " + K_AB1st);
             System.out.println("K_AB2: " + K_AB2st);
 
@@ -143,17 +147,21 @@ public class ProtocoloCliente {
             }
             //recibir vector
             String ivString = pIn.readLine(); 
-            System.out.println("iv: " + ivString);
+            //System.out.println("iv: " + ivString);
             byte[] iv = Base64.getDecoder().decode(ivString);
             IvParameterSpec vectorIV = new IvParameterSpec(iv);
-            System.out.println("iv: " + vectorIV);
+            //System.out.println("iv: " + vectorIV);
             //Empezar consulta
 
             System.out.println("Ingrese el id del usuario: ");
             String idU = stdIn.readLine();
+            String id_cifrado_string = cifrarID(idU, K_AB1, vectorIV);
+            String id_hmac_string = generarHMAC(idU, K_AB2);
+            pOut.println(id_cifrado_string);
+            pOut.println(id_hmac_string);
             System.out.println("Ingrese el id del paquete: ");
             String iPaquete = stdIn.readLine();
-            //cifrarID(idU, null, null)
+            
 
 
             fromUser = null;
@@ -200,7 +208,7 @@ public class ProtocoloCliente {
     public static String cifrarID(String Id, SecretKey K_AB1, IvParameterSpec ivSpec) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.ENCRYPT_MODE, K_AB1, ivSpec);
-        byte[] encryptedId = cipher.doFinal(Base64.getDecoder().decode(Id));
+        byte[] encryptedId = cipher.doFinal(Id.getBytes());
         return Base64.getEncoder().encodeToString(encryptedId);
     }
 
@@ -208,7 +216,7 @@ public class ProtocoloCliente {
     public static String generarHMAC(String Id, SecretKey K_AB2) throws Exception {
         Mac hmac = Mac.getInstance("HmacSHA384");
         hmac.init(K_AB2);
-        byte[] hmacBytes = hmac.doFinal(Id.getBytes());
+        byte[] hmacBytes = hmac.doFinal(Base64.getDecoder().decode(Id));
         return Base64.getEncoder().encodeToString(hmacBytes);
     }
 
