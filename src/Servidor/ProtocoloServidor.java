@@ -195,12 +195,27 @@ public class ProtocoloServidor {
             case 3:
                 String id_cifrado_string = inputLine;
                 System.out.println("id de usuario cifrado: " + id_cifrado_string);
+
                 String id_hmac_string = pIn.readLine();
                 System.out.println("id con hmac: " + id_hmac_string);
+
                 String id_descifrado_string = desencriptarID(id_cifrado_string, K_AB1, vectorIV);
                 System.out.println("id usuario decifrado: " + id_descifrado_string);
+
                 boolean verificado = desencriptarHMAC(id_descifrado_string, id_hmac_string, K_AB2);
                 System.out.println("verificación de integridad con hmac: " + verificado);
+
+                String idpaquete_cifrado_String = pIn.readLine();
+                System.out.println("id de paquete cifrado: " + idpaquete_cifrado_String);
+
+                String idpaquete_hmac_string = pIn.readLine();
+                System.out.println("id paquete con hmac: " + idpaquete_hmac_string);
+
+                String idpaquete_descifrado_string = desencriptarID(idpaquete_cifrado_String, K_AB1, vectorIV);
+                System.out.println("id paquete decifrado: " + idpaquete_descifrado_string);
+
+                boolean verificadoPaquete = desencriptarHMAC(idpaquete_descifrado_string, idpaquete_hmac_string, K_AB2);
+                System.out.println("verificación de integridad con hmac: " + verificadoPaquete);
                 estado++;
             default:
                 outputLine = "ERROR";

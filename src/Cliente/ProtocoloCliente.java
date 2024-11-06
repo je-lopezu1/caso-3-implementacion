@@ -163,7 +163,11 @@ public class ProtocoloCliente {
             pOut.println(id_cifrado_string);
             pOut.println(id_hmac_string);
             System.out.println("Ingrese el id del paquete: ");
-            String iPaquete = stdIn.readLine();
+            String idPaquete = stdIn.readLine();
+            String idpaquete_cifrado_string = cifrarID(idPaquete, K_AB1, vectorIV);
+            String idpaqeute_hmac_string = generarHMAC(idPaquete, K_AB2);
+            pOut.println(idpaquete_cifrado_string);
+            pOut.println(idpaqeute_hmac_string);
             
 
 
