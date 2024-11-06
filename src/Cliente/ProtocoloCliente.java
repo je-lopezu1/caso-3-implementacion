@@ -25,6 +25,7 @@ public class ProtocoloCliente {
         boolean ejecutar = true;
 
         while (ejecutar) {
+            pOut.println("SECINIT");
             //VERIFICACIÓN DE RETO
             BigInteger reto = new BigInteger(256, new java.util.Random());
             byte[] retoCifrado = cifrarReto(reto, publicKey);
@@ -34,7 +35,7 @@ public class ProtocoloCliente {
             pOut.println(fromUser);
             // lee la respuesta del servidor
             if ((fromServer = pIn.readLine()) != null) {
-                System.out.println("Respuesta del Servidor: " + fromServer);
+                System.out.println("Reto recibido: " + fromServer);
             }
             byte[] rtaBytes = Base64.getDecoder().decode(fromServer);
             BigInteger rtaConverted = new BigInteger(rtaBytes);
@@ -87,7 +88,7 @@ public class ProtocoloCliente {
                 signature.update(dataToVerify);
                 // Verificar la firma
                 boolean verificacionFirma = signature.verify(firma);
-                System.out.println(verificacionFirma);
+                
                 if (!verificacionFirma)
                 {
                     fromUser = "ERROR";
@@ -123,7 +124,7 @@ public class ProtocoloCliente {
 
             // Derivar K_AB1 y K_AB2 a partir de la clave compartida
             byte[] sharedSecretBytes = sharedSecret.toByteArray();
-            System.out.println("BYTES: " + sharedSecretBytes);
+            //System.out.println("BYTES: " + sharedSecretBytes);
             // Calcular K_AB1 y K_AB2 usando SHA-512 y dividir en dos mitades
             MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
             byte[] hash = sha512.digest(sharedSecretBytes);
@@ -136,8 +137,8 @@ public class ProtocoloCliente {
             
             String K_AB1st = Base64.getEncoder().encodeToString(K_AB1bytes);
             String K_AB2st = Base64.getEncoder().encodeToString(K_AB2bytes);
-            System.out.println("K_AB1: " + K_AB1st);
-            System.out.println("K_AB2: " + K_AB2st);
+            System.out.println("K_AB1 calculada: " + K_AB1st);
+            System.out.println("K_AB2 calculada: " + K_AB2st);
             K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
             K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
 
@@ -170,13 +171,13 @@ public class ProtocoloCliente {
             pOut.println(idpaqeute_hmac_string);
             
             String estadoPaqueteCifrado = pIn.readLine();
-            System.out.println("Estado de paquete cifrado: " + estadoPaqueteCifrado);
+            System.out.println("ID Estado de paquete cifrado: " + estadoPaqueteCifrado);
 
             String estadoPaqueteHMAC = pIn.readLine();
-            System.out.println("Estado de paquete con HMAC: " + estadoPaqueteHMAC);
+            System.out.println("ID Estado de paquete con HMAC: " + estadoPaqueteHMAC);
 
             String IDestadoPaquete = desencriptarID(estadoPaqueteCifrado, K_AB1, vectorIV);
-            System.out.println("ID Estado de paquete: " + IDestadoPaquete);
+            System.out.println("ID Estado de paquete descifrado: " + IDestadoPaquete);
 
             boolean verificado = desencriptarHMAC(IDestadoPaquete, estadoPaqueteHMAC, K_AB2);
             System.out.println("verificación de integridad con hmac: " + verificado);
@@ -195,8 +196,8 @@ public class ProtocoloCliente {
             if (fromUser != null) {
                 System.out.println("El usuario escribió: " + fromUser);
                 
-                // si el mensaje ingresado es "OK", detiene la ejecución
-                if (fromUser.equalsIgnoreCase("OK")) {
+                // si el mensaje ingresado es "TERMINAR", detiene la ejecución
+                if (fromUser.equalsIgnoreCase("TERMINAR")) {
                     ejecutar = false;
                 }
 
@@ -205,7 +206,7 @@ public class ProtocoloCliente {
             }
 
             
-            ejecutar = false;
+            //ejecutar = false;
         }
         }
 

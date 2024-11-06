@@ -61,7 +61,7 @@ public class BaseDatos {
 
                     // Formato de impresión
                     String linea = "Usuario: " + usuarioId + ", Paquete: " + paqueteId + ", Estado: " + estado;
-                    System.out.println(linea);
+                    //System.out.println(linea);
                     writer.write(linea + "\n");
                 }
             }

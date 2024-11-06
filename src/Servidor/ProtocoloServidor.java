@@ -32,11 +32,12 @@ public class ProtocoloServidor {
     
 
     while (estado < 4 && (inputLine = pIn.readLine()) != null) { //TODO cambiar max estados
-        System.out.println("Entrada a procesar: " + inputLine);
+        //System.out.println("Entrada a procesar: " + inputLine);
         switch (estado) {
             case 0: //VERIFICACIÓN DEL RETO
                 try{
-
+                    System.out.println(inputLine);
+                    inputLine = pIn.readLine();
                     byte[] mensaje = Base64.getDecoder().decode(inputLine);
                     BigInteger rta = desencriptarReto(mensaje, privateKey);
                     String rtaString = Base64.getEncoder().encodeToString(rta.toByteArray());
@@ -169,8 +170,8 @@ public class ProtocoloServidor {
                 System.arraycopy(hash, 32, K_AB2bytes, 0, 32);
                 String K_AB1st = Base64.getEncoder().encodeToString(K_AB1bytes);
                 String K_AB2st = Base64.getEncoder().encodeToString(K_AB2bytes);
-                System.out.println("K_AB1: " + K_AB1st);
-                System.out.println("K_AB2: " + K_AB2st);
+                System.out.println("K_AB1 calculada: " + K_AB1st);
+                System.out.println("K_AB2 calculada: " + K_AB2st);
                 K_AB1 = new SecretKeySpec(K_AB1bytes, "AES");
                 K_AB2 = new SecretKeySpec(K_AB2bytes, "HmacSHA384");
                 // Crear un arreglo de 16 bytes para el IV
