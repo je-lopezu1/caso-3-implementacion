@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 
 public class ThreadServidor extends Thread {
@@ -30,7 +31,12 @@ public class ThreadServidor extends Thread {
             BufferedReader lector = new BufferedReader(new InputStreamReader(sktCliente.getInputStream()));
 
             // Procesar la comunicación entre el cliente y el servidor
-            ProtocoloServidor.procesar(lector, escritor, privateKey);
+            try {
+                ProtocoloServidor.procesar(lector, escritor, privateKey);
+            } catch (NoSuchAlgorithmException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 
             // Cerrar los flujos y el socket
             escritor.close();

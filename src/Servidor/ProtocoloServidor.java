@@ -4,19 +4,27 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 
 public class ProtocoloServidor {
-    public static void procesar(BufferedReader pIn, PrintWriter pOut, PrivateKey privateKey) throws IOException {
+    private static BigInteger P;
+    private static BigInteger x;
+    public static void procesar(BufferedReader pIn, PrintWriter pOut, PrivateKey privateKey) throws IOException, NoSuchAlgorithmException {
     String inputLine;
     String outputLine;
     int estado = 0;
+    
+    
 
     while (estado < 3 && (inputLine = pIn.readLine()) != null) { //TODO cambiar max estados
         System.out.println("Entrada a procesar: " + inputLine);
@@ -29,6 +37,7 @@ public class ProtocoloServidor {
                     String rtaString = Base64.getEncoder().encodeToString(rta.toByteArray());
                     estado++;
                     outputLine = rtaString;
+                    pOut.println(outputLine);
                 } catch (Exception e) {
                     outputLine = "ERROR en argumento esperado";
                     estado = 0;
@@ -75,7 +84,7 @@ public class ProtocoloServidor {
                     }
 
                     // Convertir P y G a BigInteger
-                    BigInteger P = new BigInteger(pHex.toString(), 16);
+                    P = new BigInteger(pHex.toString(), 16);
                     BigInteger G = new BigInteger(gValue);
 
                     // Imprimir los valores de P y G
@@ -83,7 +92,7 @@ public class ProtocoloServidor {
                     System.out.println("Valor de G: " + G);
 
                     // Generar un valor aleatorio x y calcular G^x mod P
-                    BigInteger x = new BigInteger(1024, new java.security.SecureRandom());
+                    x = new BigInteger(1024, new java.security.SecureRandom());
                     BigInteger Gx = G.modPow(x, P);
                     System.out.println("Valor de G^x mod P: " + Gx);
 
@@ -122,7 +131,7 @@ public class ProtocoloServidor {
 
                     //System.out.println(firmaBytes);
                     outputLine = firmaString;
-                    //pOut.println(outputLine);
+                    pOut.println(outputLine);
                     estado++;
 
                 } catch (Exception e) {
@@ -133,13 +142,44 @@ public class ProtocoloServidor {
                 break;
 
             case 2:
-                if (inputLine.equalsIgnoreCase("OK")) {
-                    outputLine = "ADIOS";
-                    estado++;
-                } else {
-                    outputLine = "ERROR. Esperaba OK";
-                    estado = 0;
-                }
+                String GYstring = inputLine;
+                byte[] GYbytes = Base64.getDecoder().decode(GYstring);
+                BigInteger GY = new BigInteger(GYbytes);
+                System.out.println("Valor de G^y: " + GY);
+                //Calcular (G^y)^x mod P para obtener la misma clave compartida
+                BigInteger sharedSecret = GY.modPow(x, P);
+                System.out.println("Clave compartida (G^y)^x mod P: " + sharedSecret);
+
+                //Derivar K_AB1 y K_AB2 a partir de la clave compartida
+                byte[] sharedSecretBytes = sharedSecret.toByteArray();
+
+                //Calcular K_AB1 y K_AB2 usando SHA-512 y dividir en dos mitades
+                MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
+                byte[] hash = sha512.digest(sharedSecretBytes);
+                
+                // Dividir el hash en dos partes para obtener K_AB1 y K_AB2
+                byte[] K_AB1 = new byte[32];
+                byte[] K_AB2 = new byte[32];
+                System.arraycopy(hash, 0, K_AB1, 0, 32);
+                System.arraycopy(hash, 32, K_AB2, 0, 32);
+                String K_AB1st = Base64.getEncoder().encodeToString(K_AB1);
+                String K_AB2st = Base64.getEncoder().encodeToString(K_AB2);
+                System.out.println("K_AB1: " + K_AB1st);
+                System.out.println("K_AB2: " + K_AB2st);
+
+                // Crear un arreglo de 16 bytes para el IV
+                byte[] iv = new byte[16];
+                // Usar SecureRandom para llenar el arreglo con valores aleatorios
+                SecureRandom secureRandom = new SecureRandom();
+                secureRandom.nextBytes(iv);
+                IvParameterSpec vectorIV = new IvParameterSpec(iv);
+
+                String ivString = Base64.getEncoder().encodeToString(iv);
+                System.out.println("iv: " + ivString);
+                System.out.println("iv: " + vectorIV);
+                //mandar vector
+                pOut.println(ivString);
+                estado++;
                 break;
 
             default:
@@ -147,7 +187,7 @@ public class ProtocoloServidor {
                 estado = 0;
                 break;
         }
-        pOut.println(outputLine);
+        //pOut.println(outputLine);
         }
     }
 

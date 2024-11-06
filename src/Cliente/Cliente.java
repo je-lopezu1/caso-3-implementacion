@@ -21,7 +21,7 @@ public class Cliente {
     public static final String SERVIDOR = "localhost";
     private static PublicKey publicKey = null;
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException, NoSuchAlgorithmException {
         Socket socket = null;
         PrintWriter escritor = null;
         BufferedReader lector = null;
